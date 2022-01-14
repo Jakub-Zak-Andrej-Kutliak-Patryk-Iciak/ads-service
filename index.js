@@ -1,17 +1,24 @@
 import express from 'express';
-import { loadAdsData, retrieveCachedData } from './ads-cache/ads.js';
-const PORT = process.env.PORT || 5000;
-const REDIS_PORT = process.env.PORT || 6379;
+import cors from 'cors';
+import bodyParser from "body-parser";
+import { run, retrieveCachedData, getRandomAdd } from './src/AdService.js';
 const app = express();
- 
-app.get("/cached", async (req, res) => {
+const ads = express();
+
+app.use(cors())
+app.use(bodyParser.json())
+app.use('/ads', ads)
+
+ads.get("/fetch", async (req, res) => {
+    const data = await getRandomAdd(2)
+    res.json(data);
+})
+
+ads.get("/cached", async (req, res) => {
     const data = await retrieveCachedData()
     res.json(data);
 })
 
-// start express server at 5000 port
-app.listen(5000, async () => {
-    const interval = setInterval(function() {
-        loadAdsData();
-      }, 20000);
+app.listen(process.env.PORT || 3000, async () => {
+    run()
 });
