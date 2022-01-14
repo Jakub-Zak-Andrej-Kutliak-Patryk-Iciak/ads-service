@@ -1,12 +1,16 @@
 import fetch from 'node-fetch';
+import dotenv from 'dotenv';
 import { mockData } from './adsmock.js';
 import { createClient } from 'redis';
+
+dotenv.config()
 
 let LAST_TIME_PULL;
 const LIMIT_TIME_IN_MIN = 2;
 const DEFAULT_CACHE = "ads-cache";
 const DATA_SOURCE = "http://psuaddservice.fenris.ucn.dk/";
-const client = createClient();
+const client = createClient({ url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}` });
+
 client.connect();
 
 
