@@ -5,8 +5,13 @@ import { createClient } from 'redis';
 
 dotenv.config()
 
-let LAST_TIME_PULL;
-const LIMIT_TIME_IN_MIN = 2;
+/*
+    TODO:
+    1. compose file update with my service
+    2. Simple loop to get data every 2 min
+    3. Cache new data
+*/ 
+
 const DEFAULT_CACHE = "ads-cache";
 const DATA_SOURCE = "http://psuaddservice.fenris.ucn.dk/";
 const client = createClient({ url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}` });
@@ -26,9 +31,9 @@ export const retrieveCachedData = async (cacheName = DEFAULT_CACHE) => {
     return new Promise((resolve, reject) => {
         client.get(cacheName).then(data => {
             if(data) {
-                resolve(JSON.parse(data));
+                resolve(data);
             }else {
-                reject("Infinite jest");
+                reject("Problem loading a cache.");
             }
         });
     })
@@ -36,15 +41,20 @@ export const retrieveCachedData = async (cacheName = DEFAULT_CACHE) => {
 
 export const loadAdsData = () => {
     let data;
-    LAST_TIME_PULL = Date.now();
+    let filtered;
 
-    data = fetch(DATA_SOURCE).then(dat => {
-        console.log('Mock load finished');
+    fetch(DATA_SOURCE).then(async load => {
+        const text = await load.text()
+        filtered = text.split(">")[1];
+
+        if(filtered != undefined) {
+            data = filtered.substring(0, filtered.indexOf("<"));
+            cacheData(DEFAULT_CACHE, data);
+            return true;
+        }else {
+            console.log("Request has failed, trying again.");
+            return false;
+        }
     });
-
-    data = JSON.stringify(mockData)
-    cacheData(DEFAULT_CACHE, data);
-
-    return data;
 }
 

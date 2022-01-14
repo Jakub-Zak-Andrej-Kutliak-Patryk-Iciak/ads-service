@@ -11,5 +11,7 @@ app.get("/cached", async (req, res) => {
 
 // start express server at 5000 port
 app.listen(5000, async () => {
-    loadAdsData();
+    const interval = setInterval(function() {
+        loadAdsData();
+      }, 20000);
 });
