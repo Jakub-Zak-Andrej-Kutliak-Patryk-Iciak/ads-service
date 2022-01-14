@@ -1,8 +1,8 @@
-FROM node:14.18-alpine
+FROM node:14
 WORKDIR /app
 COPY package.json ./
-COPY yarn.lock ./
-RUN yarn install
+COPY package-lock.json ./
+RUN npm install
 # If you are building your code for production
 # RUN npm ci --only=production
 COPY . .
