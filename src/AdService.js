@@ -20,9 +20,9 @@ const cacheData = (cacheName, data) => {
 
 export const retrieveCachedData = (key = process.env.REDIS_DATA_STORAGE) => {
   return new Promise((resolve, reject) => {
-    client.get(key)
+    client.sMembers(key)
       .then((data) => {
-        resolve(data)
+        resolve(data);
       }).catch(error => reject("Failed to retrieve cached data => " + error))
   })
 }
@@ -45,17 +45,28 @@ const getOrSetCache = (key, callback) => {
   })
 }
 
-const pushNewAdd = (ad, callback) => {
-  client.lPush(process.env.REDIS_DATA_STORAGE, ad, (error) => {
+const pushNewAdd = (key, ad, callback = () => {}) => {
+  client.sAdd(key, ad, (error) => {
     if (error) return callback(error)
     callback()
   })
 }
 
 export const getRandomAdd = async (count = 1) => {
-  // TODO: implement me please
-  const ads = await retrieveCachedData(process.env.REDIS_DATA_STORAGE)
-  return ["My name is Kamil.", "I do not like mushrooms!"]
+  let result = []
+  const adsObject = await retrieveCachedData()
+  try {
+    const ads = Object.values(adsObject)
+    if (ads.length === 0) return []
+    if (ads.length <= count) return ads
+
+    for (let i = 0; i < count; i++) {
+      result = result.concat(ads.splice(Math.floor(Math.random() * ads.length), 1))
+    }
+  } catch (error) {
+    console.log(`Could not parse the result to an array, typeof=${typeof adsObject}`, error, adsObject)
+  }
+  return result
 }
 
 export const run = () => {
@@ -74,6 +85,7 @@ const loadAdsData = () => {
     const text = await load.text()
     try {
       const data = await parseAd(text)
+      console.log('New ad retrieved:', data)
       pushNewAdd(process.env.REDIS_DATA_STORAGE, data);
     } catch (error) {
       console.error('Text could not be process due to wrong format!')
@@ -105,7 +117,7 @@ export const parseAd = (text) => {
     throw new Error('Nothing returned, external service is down!')
   }
   const data = text.match(/>.*</g);
-  if (data.length !== 1) {
+  if (!data || data.length !== 1) {
     throw new Error("Unprocessable data => " + text)
   }
 
